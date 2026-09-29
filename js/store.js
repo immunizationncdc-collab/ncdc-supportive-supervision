@@ -25,6 +25,8 @@ export function onUser(cb) {
   if (!isConfigured) { cb({ uid: "demo", email: "demo@local", demo: true }); return () => {}; }
   return fb.a.onAuthStateChanged(fb.auth, cb);
 }
+export const loginAnon = () => fb.a.signInAnonymously(fb.auth);
+export const currentUser = () => (isConfigured && fb) ? fb.auth.currentUser : { uid: "demo" };
 export const login = (email, pw) => fb.a.signInWithEmailAndPassword(fb.auth, email.trim(), pw);
 export const logout = () => isConfigured ? fb.a.signOut(fb.auth) : Promise.resolve();
 export const resetPassword = email => fb.a.sendPasswordResetEmail(fb.auth, email.trim());
