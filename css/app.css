@@ -185,3 +185,29 @@ button { cursor: pointer; }
 .done-screen .lamp { width: 72px; height: 72px; margin: 0 auto 16px; }
 @media (prefers-reduced-motion: reduce) { * { transition: none !important; } }
 @media (max-width: 380px) { .grid2 { grid-template-columns: 1fr; } .kpis { grid-template-columns: repeat(2, 1fr); } }
+
+.brand .by { margin-top: 4px; font-size: .8rem; color: var(--gold); opacity: 1; font-weight: 600; }
+.namecard { background: #fff; border: 1px solid var(--line); border-radius: var(--r-md); padding: 12px 14px; margin-bottom: 14px; }
+.namecard.need { border: 2px solid var(--gold); background: var(--gold-soft); }
+.namecard label { display: block; font-size: .85rem; font-weight: 600; color: var(--navy); margin-bottom: 6px; }
+.namerow { display: flex; gap: 8px; }
+.namerow input { flex: 1; min-width: 0; border: 1.5px solid var(--line); border-radius: var(--r-sm); padding: 10px 12px; font-size: 1rem; }
+
+/* ---------- تثبيت التطبيق ---------- */
+.brand .wrap > div { flex: 1; min-width: 0; }
+.installbtn { flex: none; align-self: flex-start; display: flex; flex-direction: column; align-items: center; gap: 2px; background: var(--gold); color: var(--navy-deep); border: 0; border-radius: 12px; padding: 8px 10px 6px; font-weight: 700; font-size: .72rem; }
+.installbtn svg { width: 24px; height: 24px; }
+.installcard { width: 100%; display: flex; align-items: center; gap: 12px; background: #fff; border: 2px dashed var(--gold); border-radius: var(--r-lg); padding: 12px 14px; margin-bottom: 16px; text-align: right; }
+.installcard .ic { width: 44px; height: 44px; border-radius: 12px; background: var(--navy); color: #fff; display: grid; place-items: center; flex: none; }
+.installcard .ic svg { width: 26px; height: 26px; }
+.installcard .tx { flex: 1; min-width: 0; line-height: 1.4; }
+.installcard .tx b { display: block; color: var(--navy); font-size: .95rem; }
+.installcard .tx small { color: var(--muted); font-size: .78rem; }
+.installcard .go { background: var(--navy); color: #fff; border-radius: 99px; padding: 6px 14px; font-weight: 700; font-size: .85rem; flex: none; }
+.sheet { position: fixed; inset: 0; background: rgba(10,39,64,.55); z-index: 60; display: flex; align-items: flex-end; justify-content: center; }
+.sheet-card { background: #fff; width: 100%; max-width: 520px; border-radius: 22px 22px 0 0; padding: 22px 20px calc(20px + env(safe-area-inset-bottom, 0px)); text-align: right; }
+.sheet-icon { width: 64px; height: 64px; border-radius: 16px; display: block; margin: 0 auto 8px; border: 1px solid var(--line); }
+.sheet-card h3 { text-align: center; color: var(--navy); margin: 0 0 12px; }
+.sheet-card ol { padding-inline-start: 22px; margin: 0 0 10px; line-height: 2; }
+.sheet-card p { color: var(--muted); font-size: .88rem; }
+.kbd { display: inline-block; border: 1px solid var(--line); border-radius: 6px; padding: 0 7px; background: var(--paper); font-weight: 700; }
