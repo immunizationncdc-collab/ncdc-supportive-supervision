@@ -1,6 +1,6 @@
 // عامل الخدمة: يجعل تطبيق الهاتف يعمل دون إنترنت في الميدان.
 // عند تعديل أي ملف ارفع رقم الإصدار حتى يُحدَّث التطبيق على الهواتف.
-const VERSION = "ncdc-ss-v1.0.0";
+const VERSION = "ncdc-ss-v1.2.0";
 const SHELL = [
   "./", "./index.html", "./manifest.webmanifest", "./css/app.css",
   "./js/app.js", "./js/questions.js", "./js/scoring.js", "./js/lists.js", "./js/store.js",
