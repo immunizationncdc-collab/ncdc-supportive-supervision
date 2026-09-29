@@ -1,0 +1,83 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <meta name="robots" content="noindex, nofollow">
+  <meta name="theme-color" content="#0F3B5F">
+  <title>منصة الإدارة — الزيارات الإشرافية الداعمة | NCDC</title>
+  <link rel="icon" href="../icons/icon-192.png">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans+Arabic:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="../css/admin.css">
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+</head>
+<body>
+  <div id="demoFlag" class="demo-flag hidden">وضع التجربة — تُعرض بيانات توضيحية + الزيارات المُرسلة من <a href="../">تطبيق الهاتف</a> على هذا المتصفح. اضبط Firebase لتفعيل المنصة الحقيقية.</div>
+
+  <header class="hdr"><div class="container">
+    <img src="../assets/logo.jpg" alt="شعار المركز الوطني لمكافحة الأمراض">
+    <div class="grow"><h1>منصة تحليل الزيارات الإشرافية الداعمة</h1><p>المركز الوطني لمكافحة الأمراض — إدارة التطعيمات</p></div>
+    <div class="user" id="userBox"></div>
+  </div></header>
+
+  <main id="loginView" class="hidden">
+    <form class="login" id="loginForm">
+      <img src="../assets/logo.jpg" alt="">
+      <h2>دخول منصة الإدارة</h2>
+      <p>الوصول مقصور على حسابات الإدارة المفعّلة.</p>
+      <input id="lem" type="email" placeholder="البريد الإلكتروني" autocomplete="username" dir="ltr" required>
+      <input id="lpw" type="password" placeholder="كلمة المرور" autocomplete="current-password" dir="ltr" required>
+      <button class="btn" style="width:100%;padding:11px" type="submit">دخول</button>
+      <div class="err" id="lerr"></div>
+    </form>
+  </main>
+
+  <div id="mainView" class="hidden">
+    <nav class="tabs" aria-label="أقسام المنصة"><div class="container" role="tablist">
+      <button class="tab" role="tab" data-tab="dash" aria-selected="true">لوحة المؤشرات</button>
+      <button class="tab" role="tab" data-tab="visits" aria-selected="false">الزيارات والتقارير</button>
+      <button class="tab" role="tab" data-tab="cap" aria-selected="false">خطة العمل التصحيحية</button>
+      <button class="tab" role="tab" data-tab="centers" aria-selected="false">متابعة المراكز</button>
+    </div></nav>
+
+    <section class="filters" aria-label="التصفية"><div class="container">
+      <div class="f wide"><label for="fMuni">البلدية</label><select id="fMuni"></select></div>
+      <div class="f wide"><label for="fCenter">اسم المركز</label><select id="fCenter"></select></div>
+      <div class="f"><label for="fFrom">من تاريخ</label><input type="date" id="fFrom"></div>
+      <div class="f"><label for="fTo">إلى تاريخ</label><input type="date" id="fTo"></div>
+      <div class="f"><label for="fType">نوع الزيارة</label><select id="fType"></select></div>
+      <div class="f"><label for="fRisk">التصنيف العام</label><select id="fRisk"></select></div>
+      <button class="btn ghost sm" id="fReset" type="button">مسح التصفية</button>
+      <span class="spacer"></span>
+      <button class="btn gold" id="expXlsx" type="button">تصدير Excel</button>
+      <button class="btn ghost" id="expCsv" type="button">CSV</button>
+      <button class="btn" id="aggReport" type="button">تقرير مجمّع</button>
+    </div></section>
+
+    <div class="container">
+      <div class="meta-line" id="metaLine"></div>
+      <section id="tab-dash"></section>
+      <section id="tab-visits" class="hidden"></section>
+      <section id="tab-cap" class="hidden"></section>
+      <section id="tab-centers" class="hidden"></section>
+      <p style="text-align:center;color:var(--muted);font-size:.8rem;margin:30px 0">إعداد د. محمد علي الجرنازي — رئيس قسم الإحصاء والمعلومات، إدارة التطعيمات</p>
+    </div>
+  </div>
+
+  <div id="reportScreen" class="report-screen hidden" role="dialog" aria-modal="true" aria-label="التقرير">
+    <div class="report-bar"><div class="container">
+      <span class="grow" id="repTitle">التقرير</span>
+      <button class="btn gold sm" id="repPrint" type="button">طباعة / حفظ PDF</button>
+      <button class="btn ghost sm" id="repXlsx" type="button" style="background:transparent;color:#fff;border-color:#fff">تصدير Excel</button>
+      <button class="btn danger sm" id="repDel" type="button" style="background:transparent">حذف الزيارة</button>
+      <button class="btn ghost sm" id="repClose" type="button" style="background:transparent;color:#fff;border-color:#fff">إغلاق</button>
+    </div></div>
+    <article class="report" id="report"></article>
+  </div>
+
+  <script type="module" src="../js/admin.js"></script>
+</body>
+</html>
