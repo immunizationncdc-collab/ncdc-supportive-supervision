@@ -10,7 +10,7 @@ import * as store from "./store.js";
 import { APP_VERSION } from "./firebase-config.js";
 
 const $app = document.getElementById("app");
-const K = { drafts: "ncdc_drafts", queue: "ncdc_queue", sent: "ncdc_sent", centers: "ncdc_centers" };
+const K = { drafts: "ncdc_drafts", queue: "ncdc_queue", sent: "ncdc_sent", centers: "ncdc_centers", name: "ncdc_sup_name" };
 const S = { user: null, profile: null, view: "boot", visit: null, step: 0 };
 
 // ---------- أدوات ----------
@@ -30,6 +30,39 @@ const ICON = {
   plus: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round"><path d="M12 5v14M5 12h14"/></svg>',
   save: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M5 3h11l3 3v15H5z"/><path d="M8 3v6h8V3M8 21v-7h8v7"/></svg>'
 };
+
+// ---------- تثبيت التطبيق على الهاتف ----------
+let deferredPrompt = null;
+const isStandalone = () => window.matchMedia("(display-mode: standalone)").matches || navigator.standalone === true;
+const isIOS = () => /iphone|ipad|ipod/i.test(navigator.userAgent) || (navigator.platform === "MacIntel" && navigator.maxTouchPoints > 1);
+window.addEventListener("beforeinstallprompt", e => { e.preventDefault(); deferredPrompt = e; if (S.view === "home") render(); });
+window.addEventListener("appinstalled", () => { deferredPrompt = null; toast("تم تثبيت التطبيق على الشاشة الرئيسية"); if (S.view === "home") render(); });
+const canOfferInstall = () => !isStandalone();
+async function doInstall() {
+  if (deferredPrompt) {
+    deferredPrompt.prompt();
+    const r = await deferredPrompt.userChoice.catch(() => null);
+    deferredPrompt = null;
+    if (r?.outcome === "accepted") return;
+    return render();
+  }
+  showInstallHelp();
+}
+function showInstallHelp() {
+  const ios = isIOS();
+  const box = document.createElement("div");
+  box.className = "sheet"; box.setAttribute("role", "dialog"); box.setAttribute("aria-label", "طريقة تثبيت التطبيق");
+  box.innerHTML = `<div class="sheet-card">
+    <img src="icons/icon-192.png" alt="" class="sheet-icon">
+    <h3>تثبيت التطبيق على الهاتف</h3>
+    ${ios ? `<ol><li>افتح هذا الرابط في متصفح <b>Safari</b>.</li><li>اضغط زر المشاركة <span class="kbd">⬆︎</span> في أسفل الشاشة.</li><li>اختر <b>«إضافة إلى الشاشة الرئيسية»</b> (Add to Home Screen).</li><li>اضغط <b>«إضافة»</b>.</li></ol>`
+          : `<ol><li>افتح هذا الرابط في متصفح <b>Chrome</b>.</li><li>اضغط القائمة <span class="kbd">⋮</span> في أعلى الشاشة.</li><li>اختر <b>«تثبيت التطبيق»</b> أو <b>«إضافة إلى الشاشة الرئيسية»</b>.</li><li>اضغط <b>«تثبيت»</b>.</li></ol>`}
+    <p>بعدها تظهر أيقونة المركز على شاشة هاتفك ويفتح التطبيق مباشرة ويعمل دون إنترنت.</p>
+    <button class="btn block" type="button">حسناً</button></div>`;
+  box.addEventListener("click", e => { if (e.target === box || e.target.tagName === "BUTTON") box.remove(); });
+  document.body.appendChild(box); box.querySelector("button").focus();
+}
+const ICON_INSTALL = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="6" y="2" width="12" height="20" rx="2.5"/><path d="M12 7v7M9 11l3 3 3-3M10 18h4"/></svg>';
 
 // ---------- الخطوات ----------
 function steps() {
@@ -66,6 +99,7 @@ function newVisit() {
 async function flushQueue() {
   const q = load(K.queue, []);
   if (!q.length || !navigator.onLine) return;
+  if (!store.demoMode && !store.currentUser()) { try { await store.loginAnon(); } catch { return; } }
   const remain = [];
   for (const v of q) {
     try {
@@ -91,6 +125,10 @@ function centersFor(m) { return [...new Set([...(L.CENTERS[m] || []), ...(load(K
 //  العرض
 // ================================================================
 function render() {
+  renderView();
+  document.getElementById("installTop")?.addEventListener("click", doInstall);
+}
+function renderView() {
   if (S.view === "login") return renderLogin();
   if (S.view === "home") return renderHome();
   if (S.view === "visit") return renderVisit();
@@ -102,10 +140,11 @@ const brand = sub => `
   ${store.demoMode ? '<div class="demo-flag">وضع التجربة — البيانات تُحفظ على هذا الجهاز فقط حتى يُضبط Firebase</div>' : ""}
   <header class="brand"><div class="wrap">
     <img src="assets/logo.jpg" alt="شعار المركز الوطني لمكافحة الأمراض">
-    <div><h1>الزيارة الإشرافية الداعمة<br>لمراكز التطعيم</h1><p>${esc(sub || "المركز الوطني لمكافحة الأمراض — إدارة التطعيمات")}</p></div>
+    <div><h1>الزيارة الإشرافية الداعمة<br>لمراكز التطعيم</h1><p>${esc(sub || "المركز الوطني لمكافحة الأمراض — إدارة التطعيمات")}</p><p class="by">إعداد: د. محمد الجرنازي</p></div>
+    ${canOfferInstall() ? `<button class="installbtn" id="installTop" type="button" aria-label="تثبيت التطبيق على الهاتف">${ICON_INSTALL}<span>تثبيت</span></button>` : ""}
   </div></header>`;
 
-const credit = `<div class="credit">إعداد <b>د. محمد علي الجرنازي</b><br>رئيس قسم الإحصاء والمعلومات — إدارة التطعيمات</div>`;
+const credit = `<div class="credit">إعداد <b>د. محمد الجرنازي</b><br>رئيس قسم الإحصاء والمعلومات — إدارة التطعيمات</div>`;
 
 function renderLogin(err = "") {
   $app.innerHTML = brand() + `
@@ -137,8 +176,14 @@ function renderHome() {
   const drafts = Object.values(load(K.drafts, {})).sort((a, b) => (b.updatedAt || "").localeCompare(a.updatedAt || ""));
   const queue = load(K.queue, []), sent = load(K.sent, []);
   const lamp = o => `<span class="dot" style="background:var(--${o || "line"})"></span>`;
+  const anon = S.profile?.anon;
+  const needName = anon && !S.profile.name;
   $app.innerHTML = brand() + `
   <main class="wrap home">
+    ${S.authErr ? `<p class="callout">${esc(S.authErr)}</p>` : ""}
+    ${canOfferInstall() ? `<button class="installcard" id="installCard" type="button"><span class="ic">${ICON_INSTALL}</span><span class="tx"><b>ثبّت التطبيق على هاتفك</b><small>أيقونة على الشاشة الرئيسية، ويعمل دون إنترنت في الميدان</small></span><span class="go">تثبيت</span></button>` : ""}
+    ${anon ? `<div class="namecard${needName ? " need" : ""}"><label for="supname">اسم المشرف (يظهر في التقارير)</label>
+      <div class="namerow"><input id="supname" value="${esc(S.profile.name || "")}" placeholder="اكتب اسمك الثلاثي" autocomplete="name"><button class="btn" id="savename" type="button">حفظ</button></div></div>` : ""}
     <button class="start-btn" id="new"><span>بدء زيارة إشرافية جديدة</span>${ICON.plus}</button>
     <p class="cycle"><b>التقييم</b> ← التحليل ← <b>التوجيه الفني</b> ← التصحيح الفوري ← <b>خطة العمل</b> ← المتابعة ← تحسّن قابل للقياس</p>
 
@@ -159,10 +204,18 @@ function renderHome() {
         : '<div class="empty">لم تُرسل أي زيارة من هذا الجهاز بعد.</div>'}
     </section>
 
-    <div class="userbar"><span>${esc(S.profile?.name || S.user?.email || "")}</span>${store.demoMode ? '<a class="linkbtn" href="admin/">فتح منصة الإدارة (تجربة)</a>' : '<button class="linkbtn" id="out">تسجيل الخروج</button>'}</div>
+    <div class="userbar"><span>${esc(S.profile?.name || S.user?.email || "")}</span>${store.demoMode ? '<a class="linkbtn" href="admin/">فتح منصة الإدارة (تجربة)</a>' : anon ? "" : '<button class="linkbtn" id="out">تسجيل الخروج</button>'}</div>
     ${credit}
   </main>`;
-  document.getElementById("new").onclick = () => { S.visit = newVisit(); S.step = 0; S.view = "visit"; saveDraft(true); render(); };
+  document.getElementById("installCard")?.addEventListener("click", doInstall);
+  document.getElementById("savename")?.addEventListener("click", () => {
+    const v = document.getElementById("supname").value.trim();
+    if (!v) return toast("اكتب اسمك أولاً");
+    save(K.name, v); S.profile.name = v; toast("حُفظ الاسم"); render();
+  });
+  document.getElementById("new").onclick = () => {
+    if (S.profile?.anon && !S.profile.name) { toast("اكتب اسمك واضغط «حفظ» قبل بدء الزيارة"); document.getElementById("supname")?.focus(); return; }
+    S.visit = newVisit(); S.step = 0; S.view = "visit"; saveDraft(true); render(); };
   document.getElementById("sync")?.addEventListener("click", flushQueue);
   document.getElementById("out")?.addEventListener("click", () => store.logout());
   $app.querySelectorAll("[data-open]").forEach(b => b.onclick = () => {
@@ -280,7 +333,7 @@ function stepBody(cur) {
 
   if (cur.id === "prev") return `
     <p class="callout">لكل إجراء اتُّفق عليه في الزيارة السابقة: الحالة الحالية، وسبب عدم التنفيذ، والدعم المطلوب.</p>
-    <button class="btn gold block" id="importPrev" type="button">استيراد إجراءات آخر زيارة لهذا المركز</button><div style="height:12px"></div>
+    ${S.profile?.anon ? "" : '<button class="btn gold block" id="importPrev" type="button">استيراد إجراءات آخر زيارة لهذا المركز</button><div style="height:12px"></div>'}
     <div id="prevlist">${prevRows()}</div>
     <button class="btn ghost block" id="addPrev" type="button">+ إضافة إجراء</button>`;
 
@@ -478,6 +531,7 @@ function setAnswer(card, ans) {
 async function checkLastVisit(center, quiet) {
   const box = document.getElementById("lastinfo"); if (!box || !center) return;
   learnCenter(S.visit.info.municipality, center);
+  if (S.profile?.anon) return; // الدخول بدون حساب لا يملك صلاحية قراءة الزيارات السابقة
   try {
     const last = await store.lastVisitFor(center);
     if (!last || last.visitNo === S.visit.visitNo) { box.innerHTML = ""; return; }
@@ -547,6 +601,8 @@ async function submit() {
   v.findings.forEach(f => { if (!f.problem) f.problem = f.text; });
   v.scores = { ...sc, sections: Object.fromEntries(Object.entries(sc.sections).map(([k, s]) => [k, s.pct])) };
   v.submittedAt = new Date().toISOString();
+  v.supervisorName = S.profile?.name || v.signature.name;
+  v.authMode = S.profile?.anon ? "anonymous" : "account";
   learnCenter(v.info.municipality, v.info.center);
   const q = load(K.queue, []); q.push(v); save(K.queue, q);
   const d = load(K.drafts, {}); delete d[v.localId]; save(K.drafts, d);
@@ -578,12 +634,25 @@ function renderDone() {
   catch (e) { $app.innerHTML = brand() + `<main class="wrap"><p class="callout">تعذّر تحميل Firebase. تحقق من الاتصال ثم أعد فتح التطبيق.</p></main>`; return; }
   store.onUser(async user => {
     S.user = user;
-    if (!user) { S.view = "login"; return render(); }
-    const pk = "ncdc_profile_" + user.uid;
-    try { S.profile = await store.getProfile(user); if (S.profile) save(pk, S.profile); }
-    catch { S.profile = load(pk, null); } // بدون إنترنت: استخدم آخر ملف تعريف محفوظ
-    if (!S.profile || !["admin", "supervisor"].includes(S.profile.role)) {
-      await store.logout(); return renderLogin("حسابك غير مفعّل بعد. اطلب من مسؤول المنصة تفعيله.");
+    if (!user) {
+      // دخول تلقائي بدون اسم مستخدم أو كلمة مرور
+      try { await store.loginAnon(); return; }
+      catch (e) {
+        S.profile = { role: "supervisor", anon: true, name: load(K.name, "") };
+        if (e?.code === "auth/operation-not-allowed" || e?.code === "auth/admin-restricted-operation")
+          S.authErr = "الدخول بدون حساب غير مفعّل في Firebase. فعّل Anonymous من Authentication ← Sign-in method.";
+        if (S.view !== "visit") { S.view = "home"; render(); }
+        return; // بدون إنترنت: يعمل التطبيق وتُرسل الزيارات عند عودة الاتصال
+      }
+    }
+    S.authErr = "";
+    if (user.isAnonymous || user.demo) {
+      S.profile = user.demo ? { role: "admin", name: "وضع التجربة" } : { role: "supervisor", anon: true, name: load(K.name, "") };
+    } else {
+      const pk = "ncdc_profile_" + user.uid;
+      try { S.profile = await store.getProfile(user); if (S.profile) save(pk, S.profile); }
+      catch { S.profile = load(pk, null); }
+      if (!S.profile || !["admin", "supervisor"].includes(S.profile.role)) { await store.logout(); return; }
     }
     if (S.view !== "visit") { S.view = "home"; render(); }
     flushQueue();
