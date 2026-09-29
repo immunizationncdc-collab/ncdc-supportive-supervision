@@ -1,12 +1,18 @@
 rules_version = '2';
-// قواعد أمان Firestore — الزيارات الإشرافية الداعمة
-// الأدوار تُحدَّد في المستند users/{uid} بالحقل role = "admin" | "supervisor"
 service cloud.firestore {
   match /databases/{database}/documents {
     function signedIn() { return request.auth != null; }
+    function isAnon() { return signedIn() && request.auth.token.firebase.sign_in_provider == "anonymous"; }
     function role() { return get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role; }
-    function isAdmin() { return signedIn() && role() == "admin"; }
-    function isStaff() { return signedIn() && role() in ["admin", "supervisor"]; }
+    function isAdmin() { return signedIn() && !isAnon() && role() == "admin"; }
+    function isStaff() { return signedIn() && !isAnon() && role() in ["admin", "supervisor"]; }
+    function validVisit() {
+      let d = request.resource.data;
+      return d.createdBy == request.auth.uid
+        && d.info.center is string && d.info.center.size() > 0 && d.info.center.size() < 200
+        && d.info.municipality is string && d.info.municipality.size() > 0 && d.info.municipality.size() < 200
+        && d.answers is map;
+    }
 
     match /users/{uid} {
       allow read: if signedIn() && (request.auth.uid == uid || isAdmin());
@@ -14,15 +20,8 @@ service cloud.firestore {
     }
 
     match /visits/{visitId} {
-      // المشرف يُنشئ زيارته فقط (لا يعدّل ولا يحذف بعد الإرسال)
-      allow create: if isStaff()
-        && request.resource.data.createdBy == request.auth.uid
-        && request.resource.data.info.center is string
-        && request.resource.data.info.municipality is string
-        && request.resource.data.answers is map;
-      // القراءة للمشرفين (لربط الزيارة السابقة للمركز) وللإدارة
+      allow create: if (isAnon() || isStaff()) && validVisit();
       allow read: if isStaff();
-      // تحديث حالة المتابعة والحذف للإدارة فقط
       allow update, delete: if isAdmin();
     }
   }
