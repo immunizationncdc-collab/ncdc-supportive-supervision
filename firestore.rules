@@ -1,0 +1,29 @@
+rules_version = '2';
+// قواعد أمان Firestore — الزيارات الإشرافية الداعمة
+// الأدوار تُحدَّد في المستند users/{uid} بالحقل role = "admin" | "supervisor"
+service cloud.firestore {
+  match /databases/{database}/documents {
+    function signedIn() { return request.auth != null; }
+    function role() { return get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role; }
+    function isAdmin() { return signedIn() && role() == "admin"; }
+    function isStaff() { return signedIn() && role() in ["admin", "supervisor"]; }
+
+    match /users/{uid} {
+      allow read: if signedIn() && (request.auth.uid == uid || isAdmin());
+      allow write: if isAdmin();
+    }
+
+    match /visits/{visitId} {
+      // المشرف يُنشئ زيارته فقط (لا يعدّل ولا يحذف بعد الإرسال)
+      allow create: if isStaff()
+        && request.resource.data.createdBy == request.auth.uid
+        && request.resource.data.info.center is string
+        && request.resource.data.info.municipality is string
+        && request.resource.data.answers is map;
+      // القراءة للمشرفين (لربط الزيارة السابقة للمركز) وللإدارة
+      allow read: if isStaff();
+      // تحديث حالة المتابعة والحذف للإدارة فقط
+      allow update, delete: if isAdmin();
+    }
+  }
+}
