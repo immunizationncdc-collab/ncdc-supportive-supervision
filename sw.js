@@ -1,6 +1,6 @@
 // عامل الخدمة: يجعل تطبيق الهاتف يعمل دون إنترنت في الميدان.
 // عند تعديل أي ملف ارفع رقم الإصدار حتى يُحدَّث التطبيق على الهواتف.
-const VERSION = "ncdc-ss-v1.2.0";
+const VERSION = "ncdc-ss-v1.3.0";
 const SHELL = [
   "./", "./index.html", "./manifest.webmanifest", "./css/app.css",
   "./js/app.js", "./js/questions.js", "./js/scoring.js", "./js/lists.js", "./js/store.js",
@@ -28,5 +28,16 @@ self.addEventListener("fetch", e => {
     const hit = await cache.match(e.request);
     const net = fetch(e.request).then(r => { if (r.ok || r.type === "opaque") cache.put(e.request, r.clone()); return r; }).catch(() => hit);
     return hit || net;
+  }));
+});
+
+// الضغط على إشعار «تقرير زيارة جديد» في منصة الإدارة يفتح المنصة على التقرير
+self.addEventListener("notificationclick", e => {
+  e.notification.close();
+  const { id, url } = e.notification.data || {};
+  e.waitUntil(self.clients.matchAll({ type: "window", includeUncontrolled: true }).then(cs => {
+    const c = cs.find(w => url && w.url.split("#")[0] === url.split("#")[0]) || cs.find(w => /\/admin/.test(w.url));
+    if (c) { if (id) c.postMessage({ type: "open-visit", id }); return c.focus(); }
+    return self.clients.openWindow(url || new URL("admin/", self.registration.scope).href);
   }));
 });
